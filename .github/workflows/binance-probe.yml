@@ -1,0 +1,30 @@
+name: binance-probe
+
+# 只能手動觸發，用來測 GitHub 機器抓不抓得到幣安資料
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe Binance endpoints
+        run: |
+          echo "runner country: $(curl -s --max-time 10 https://ipinfo.io/country || echo unknown)"
+          echo "runner region:  $(curl -s --max-time 10 https://ipinfo.io/region || echo unknown)"
+          B=https://data-api.binance.vision/api/v3
+          for u in \
+            "$B/klines?symbol=BTCUSDT&interval=15m&limit=5" \
+            "$B/klines?symbol=BTCUSDT&interval=1h&limit=5" \
+            "$B/klines?symbol=BTCUSDT&interval=4h&limit=5" \
+            "$B/klines?symbol=BTCUSDT&interval=1d&limit=5" \
+            "$B/exchangeInfo" \
+            "$B/ticker/24hr?symbol=BTCUSDT" \
+            "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1h&limit=5"
+          do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$u" || true)
+            echo "$u → $code"
+          done
