@@ -1,6 +1,6 @@
 name: update
 
-# Every hour: fetch Binance data, build the site, deploy to Cloudflare.
+# Every hour (minute 7, UTC): fetch Binance data, build the site, deploy to Cloudflare.
 # If the fetch is incomplete the job fails before deploy, so the live site keeps the last good data.
 on:
   schedule:
