@@ -1,0 +1,60 @@
+name: update
+
+# Every hour: fetch Binance data, build the site, deploy to Cloudflare.
+# If the fetch is incomplete the job fails before deploy, so the live site keeps the last good data.
+on:
+  schedule:
+    - cron: '7 * * * *'
+    # Weekly keepalive: GitHub disables schedules in public repos after 60 days without commits.
+    - cron: '17 0 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Fetch data
+        run: npm run fetch-data
+      - name: Build
+        run: npm run build
+      - name: Data size
+        run: ls -la dist/data
+      - name: Deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "Cloudflare secrets not set yet; skipping deploy."
+            exit 0
+          fi
+          npx wrangler deploy
+
+  keepalive:
+    if: github.event.schedule == '17 0 * * 1'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          date -u +%Y-%m-%dT%H:%M:%SZ > .keepalive
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .keepalive
+          git commit -m "keepalive" || exit 0
+          git push

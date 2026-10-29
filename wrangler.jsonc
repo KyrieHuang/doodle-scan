@@ -1,0 +1,8 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "doodle-scan",
+  "compatibility_date": "2026-10-01",
+  // Static files only: the built site plus data/*.json. No Worker code, no database.
+  "assets": { "directory": "dist" },
+  "workers_dev": true
+}

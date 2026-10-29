@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.wrangler/
+.dev.vars
+.env*
+# Generated every hour by scripts/fetch-data.mjs; deployed, not committed.
+public/data/
